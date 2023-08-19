@@ -1,0 +1,9 @@
+-cc=vbcchc12 -cpu=6809 -I/home/wkt/wktcloud/Nine_E/Library/include -quiet %s -o= %s %s -O=%ld
+-ccv=vbcchc12 -cpu=6809 -I/home/wkt/wktcloud/Nine_E/Library/include %s -o= %s %s -O=%ld
+-as=vasm6809_std -quiet -nowarn=62 -opt-branch -opt-offset -Fvobj %s -o %s 
+-asv=vasm6809_std -nowarn=62 -Fvobj -opt-branch -opt-offset -v %s -o %s
+-rm=rm %s
+-rmv=rm %s
+-ld=vlink -b srec19 -Cvbccelf -T"$VBCC"/targets/6809-ninec-rom/vlink.cmd %s %s -o %s -Mbla
+-ldv=vlink -v  -b srec19 -Cvbccelf -T"$VBCC"/targets/6809-ninec-rom/vlink.cmd  %s %s -o %s -Mbla
+
