@@ -19,7 +19,7 @@ getpw.o __getpwent.o getpwnam.o getpwuid.o gets.o getsockname.o \
 gettimeofday.o getw.o gmtime.o gmtime_r.o grent.o index.o \
 initgroups.o isalnum.o isalpha.o isascii.o isatty.o isblank.o iscntrl.o \
 isdigit.o isgraph.o islower.o isprint.o ispunct.o isspace.o isupper.o \
-isxdigit.o killpg.o l64a.o labs.o libclose.o libintl.o libload.o libopen.o \
+isxdigit.o l64a.o labs.o libclose.o libintl.o libload.o libopen.o \
 libopenfd.o listen.o localtim.o localtim_r.o lrand48.o lsearch.o \
 lstat.o ltoa.o ltostr.o malloc.o memccpy.o memchr.o memcmp.o memcpy.o \
 memmove.o memset.o mkfifo.o mkstemps.o \
@@ -39,7 +39,7 @@ sysconf.o tcdrain.o tcflow.o tcflush.o tcgetattr.o tcsetattr.o \
 termcap.o tfind.o tgetent.o time.o tmpfile.o \
 tmpnam.o tolower.o toupper.o tsearch.o ttyname.o tzset.o umount.o ungetc.o \
 utent.o utimes.o utsname.o varargs.o vfprintf.o vfprintf_m.o \
-vfscanf.o vfscanf_m.o vprintf.o vscanf.o vsscanf.o wait.o xitoa.o
+vfscanf.o vfscanf_m.o vprintf.o vscanf.o vsscanf.o xitoa.o
 
 libninec.a: ${OBJS}
 	rm -f libninec.a

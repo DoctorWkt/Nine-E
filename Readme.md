@@ -2,6 +2,7 @@ Welcome to the Nine-E project. The aim here is to create a Unix-like
 environment on an 8-bit computer.
 
 On the hardware side, there is:
+ - a 6809 CPU,
  - 8K of ROM,
  - 54K of RAM,
  - a UART, and
@@ -22,13 +23,13 @@ The hardware is rock solid. I've got the xv6 filesystem in ROM and working well.
 I've got some of the FUZIX libc running including the mem/string functions, the
 stdio functions, and malloc/brk/sbrk. The rest of the libc is untested.
 
-There are some basic programs, e.g. the ones that come with xv6. There is also
+There are some basic programs taken from xv6, FUZIX and Minix 1.5. There is also
 a simple vi-like editor, a simple less-like pager, and a document processor
 called `roff`. So, with the current system, you can edit documents, process them
 and see the output.
 
 There is a simple shell that knows about `*` and `?` expansion, file redirection
-such as `>`, `<`, `>>` and `2>`.
+such as `>`, `<`, `>>` and `2>`. It also has simple "readline" functionality.
 
 ## Quick Start
 
@@ -46,7 +47,6 @@ drwxrwxrwx     2 root root    464 bin
 -rwxrwxrwx     1 root root   6071 roff_manual
 $ cd bin
 $ ls -l
-drwxrwxrwx     1 root root     32 Z
 -rwxrwxrwx     1 root root   3494 basename
 -rwxrwxrwx     1 root root   5277 cal
 -rwxrwxrwx     1 root root   1798 cat

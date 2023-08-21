@@ -121,7 +121,7 @@ char attrbuf[LINELEN];
 // Print out a single line. The cursor has been positioned
 // at the start of the correct line on the screen.
 // We have to interpret any backspace character in the input buffer
-void paint_line(struct lineposn *this) {
+void paint_line(struct lineposn *this, int newline) {
   char *lineptr = linebuf;
   char *attrptr = attrbuf;
   char *bufptr = buf;
@@ -208,13 +208,13 @@ void paint_line(struct lineposn *this) {
   // Turn off attributes if the last character had them on
   // and put out a newline
   if (lastattr != NOATTR) fputs(noattr, stdout);
-  fputc('\n', stdout);
+  if (newline) fputc('\n', stdout);
 }
 
 // Given a node in the doubly linked list,
 // output 24 lines from this point onwards.
 void paint_screen(struct lineposn *this) {
-  int i;
+  int i, newline;
   long offset= this->offset;
 
   // Clear the screen and move to the top left corner
@@ -226,10 +226,11 @@ void paint_screen(struct lineposn *this) {
     exit(1);
   }
 
-  // Print out each line
-  for (i = 1; i <= 24; i++) {
+  // Print out each line. Don't do a newline on the last one
+  for (i = 1, newline = 1; i <= 24; i++) {
     if (this == NULL) return;
-    paint_line(this); this = this->next;
+    if (i==24) newline=0;
+    paint_line(this, newline); this = this->next;
   }
 }
 
@@ -308,5 +309,6 @@ int main(int argc, char *argv[]) {
       break;
     }
   }
+  fputc('\n', stdout);
   return (0);
 }
