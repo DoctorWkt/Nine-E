@@ -4,6 +4,7 @@
 #include <xv6/param.h>
 #include <fcntl.h>
 #include <romcalls.h>
+#include <readline/readline.h>
 void cprintf(char *fmt, ...);
 
 #define MAXARG 20		// Maximum number of arguments
@@ -12,15 +13,13 @@ void cprintf(char *fmt, ...);
 // to be on the stack when we copy stuff.
 int i, fd, realargc, ch, len, memsize, stroffset;
 int argc=0, wordc;
-int patterncnt=0;
 int *newargc;
 char *cmdp, *destbuf, *sptr;
 char *argv[MAXARG + 1], **newargv, **newarglist;
 char *wordlist[MAXARG + 1];
-char *patternlist[MAXARG + 1];
 DIR *D;
 struct dirent *dent;
-char buf[100];
+char *buf;
 char binbuf[100];
 char seekbuf[100];
 
@@ -42,8 +41,9 @@ void copyargs() {
 
   // Now add on the lengths of all the arguments.
   // Ensure we count the NUL at the end of each argument.
-  for (i = 0; i < realargc; i++) memsize += strlen(argv[i]) + 1;
-
+  for (i = 0; i < realargc; i++) {
+    memsize += strlen(argv[i]) + 1;
+  }
 
   // Set the start of the destbuf at
   // the top of the stack minus memsize.
@@ -130,6 +130,7 @@ int match(char *pattern, char *name) {
 }
 
 int main() {
+  int end;
 
   // Close any open file descriptors
   for (fd=0; fd < NFILE; fd++) sys_close(fd);
@@ -139,22 +140,8 @@ int main() {
   fd= sys_open("/tty", O_WRONLY);
   fd= sys_open("/tty", O_WRONLY);
 
-  // Print out the prompt
-  romputc('$');
-  romputc(' ');
-
-  // Get characters into the line buffer, ending
-  // when we get a newline or run out of buffer.
-  // NUL terminate the buffer just in case.
-  buf[99] = 0;
-  for (i = 0; i < 99; i++) {
-    ch = romgetputc();
-    if (ch == '\n' || ch == '\r') {
-      buf[i] = 0;
-      break;
-    }
-    buf[i] = (char) (ch & 0xff);
-  }
+  // Use readline() to get the input line
+  buf= readline("$ ");
 
   // Split the line up into non-whitespace arguments or operators
   for (cmdp = buf, wordc = 0; wordc < MAXARG; wordc++) {
@@ -172,42 +159,44 @@ int main() {
   // Copy the words into the argv list for now
   for (i=0; i<wordc && argc < MAXARG; i++) {
 
-    // See if the word contains a pattern to match on, i.e. a '*' or '?'
-    if ((index(wordlist[i], '?')!=NULL) || (index(wordlist[i], '*')!=NULL)) {
-      // For now we can only pattern match in this directory
-      if (index(wordlist[i], '/')!=NULL) {
-	cprintf("Pattern matching only in this directory, sorry\n"); exit(1);
-      }
-      // Add the word as a pattern
-      patternlist[patterncnt++]= wordlist[i]; continue;
+    // If the word starts with a single or double quote, trim off the
+    // characters at each end and add to the argv list
+    if ((wordlist[i][0] == '\'') || (wordlist[i][0] == '"')) {
+      end=strlen(wordlist[i]);
+      wordlist[i][end-1]= 0;
+      argv[argc++]= &wordlist[i][1]; continue;
     }
 
-    // Not a pattern, add the word to the argv list
-    argv[argc++]= wordlist[i];
-  }
+    // See if the word contains a pattern to match on, i.e. a '*' or '?'
+    if ((index(wordlist[i], '?')!=NULL) || (index(wordlist[i], '*')!=NULL)) {
 
-  // If we have any patterns, go through all the entries in this
-  // directory and see if any of them match
-  if (patterncnt!=0) {
-    D= opendir(".");
-    if (D==NULL) { cprintf("Can't opendir .\n"); exit(1); }
+      // For now we can only pattern match in this directory
+      if (index(wordlist[i], '/')!=NULL) {
+	cprintf("Pattern matching only in this directory, sorry\n"); myexit(1);
+      }
 
-    // Process each entry
-    while ((dent=readdir(D))!=NULL) {
+      // Search the current directory for any matches
+      D= opendir(".");
+      if (D==NULL) { cprintf("Can't opendir .\n"); myexit(1); }
 
-      // Skip empty directory entries
-      if (dent->d_name[0]=='\0') continue;
+      // Process each entry
+      while ((dent=readdir(D))!=NULL) {
 
-      for (i=0; i<patterncnt; i++) {
+        // Skip empty directory entries
+        if (dent->d_name[0]=='\0') continue;
+
 	// cprintf("About to match %s against %s\n", patternlist[i], dent->d_name);
 
 	// If there's a match, add the filename to the argv list
-	if (match(patternlist[i], dent->d_name) && argc < MAXARG) {
+	if (match(wordlist[i], dent->d_name)) {
           argv[argc++]= dent->d_name;
 	}
       }
+      closedir(D); free(D); continue;
     }
-    closedir(D);
+
+    // Not a pattern or quoted word, add the word to the argv list
+    argv[argc++]= wordlist[i];
   }
 
   // See if the first argument is cd. If so, do the chdir and
@@ -287,7 +276,7 @@ int main() {
 
       // Open the file.
       if ((fd= sys_open(argv[i+1], O_RDONLY))==-1) {
-        cprintf("Cannot open %s\n", argv[i+1]); exit(1);
+        cprintf("Cannot open %s\n", argv[i+1]); myexit(1);
       }
 
       // Close stdin and dup the fd down to stdin, then close the fd
@@ -303,7 +292,7 @@ int main() {
 
       // Open the file.
       if ((fd= sys_open(argv[i+1], O_CREAT | O_TRUNC | O_WRONLY))==-1) {
-        cprintf("Cannot open %s\n", argv[i+1]); exit(1);
+        cprintf("Cannot open %s\n", argv[i+1]); myexit(1);
       }
 
       // Close stderr and dup the fd down to stderr, then close the fd

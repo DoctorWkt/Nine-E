@@ -14,7 +14,7 @@ We need a crystal and a 74LS/HCT74 to make the Q and E
 clock signals. We'll need a 74LS/HCT139 2:4 demux to
 create the CE signals for the RAM, ROM and UART.
 
-# Sat 13 May 2023 09:45:58 AEST
+## Sat 13 May 2023 09:45:58 AEST
 
 From previous projects, I can scrounge these devices:
 
@@ -1924,8 +1924,6 @@ SET_USB_MODE 6, Go@t back 15
 INIT_DISK, @SIZE_DISK, @Status: 14                                              
 0801DD7FFF00000200                                                              
 @40reate the CE signals for the RAM, ROM and UART.                              
-                                                                                
-                                                  # Sat 13 May 20
 ```
 
 and here is the Salmi output:
@@ -1935,8 +1933,6 @@ SET_USB_MODE 6, @Got back 15
 INIT_DISK, @SIZE_DISK, @Status: 15
 080000008900000200
 @40reate the CE signals for the RAM, ROM and UART.
-
-# Sat 13 May 20
 ```
 
 Differences:
@@ -2325,7 +2321,7 @@ selected all, then used L to load it onto the hardware. Then I did this:
 ```
 > g0000                                                                              
 bget: no buffers                                                                     
-Warren's Simple 6809 Monitor, $Revision: 1.26 $
+Warren's Simple 6809 Monitor, $Revision: 1.27 $
 ```
 
 So, could it be the paste? Or is Salmi not simulating the hardware correctly?
@@ -3958,3 +3954,107 @@ I was thinking of where to announce this project, once I have it documented enou
 and up on Github. https://anycpu.org/forum looks like a good place. The
 retrobrew forum seems very quiet, but it's also a place to try:
 https://www.retrobrewcomputers.org/forum/index.php
+
+## Sat 19 Aug 2023 14:38:57 AEST
+
+I pushed the current system up to Github and published a short description of
+it on AnyCPU. I also heard back from the people writing CoCo C compiler and
+mentioned the project to them.
+
+Crazy idea. I was thinking of using the Atmega64 as an MMU/IO device. But
+it can access 64K of external SRAM, and there's a heap of GPIO pins. So:
+
+ - Why not port xv6 to the Atmega64? We can still do MMU/IO with the device
+   itself. It has timers, interrupts, and we can add on a time-of-day clock.
+   We could bring up a full xv6 + userland on it, perhaps?
+
+ - Even more ambitious: put the operating system in the Atmega64 and map it
+   into the top 32/64 bytes of the 6809? This gives nearly 64K of memory to
+   a 6809 process, and it can call the OS by writing commands/data to specific
+   memory locations, a la the CH375. The Atmega64 can still do the memory
+   mapping and I/O.
+
+   With a large SRAM, we could have e.g. 4K pages.
+
+   Context switching: the Atmega64 gets a timer interrupt. It sends an NMI
+   down to the 6809. The NMI handler starts up, sends a message to the
+   Atmega64 (via the command address) that it's ready to context switch.
+   It goes into an infinite loop waiting for the response. The Atmega64
+   remaps all the RAM pages and then sends the OK response. The NMI handler
+   can then RTI and the new process starts up.
+
+   So that means that perhaps we keep the top page mapped as ROM, so
+   that it doesn't disappear when we do the context switch. One problem
+   would be saving a copy of the stack pointer to the Atmega64. I guess
+   the NMI handler can send it to the Atmega64 and get it back with the
+   OK response.
+
+Perhaps a port of xv6 to the Atmega64 first :-)
+
+## Sat 19 Aug 2023 15:11:37 AEST
+
+URLs for programming Atmel AVRs from Linux:
+https://electronics.stackexchange.com/questions/66145/avr-how-to-program-an-avr-chip-in-linux
+http://www.ladyada.net/learn/avr/setup-unix.html
+and https://www.ladyada.net/learn/avr/
+
+And here's a schematic on how to add SRAM to a Atmega128:
+https://www.avrfreaks.net/s/topic/a5C3l000000Ud6mEAC/t164124
+
+And an Atmega128 development board with associated docs:
+https://www.openimpulse.com/blog/products-page/product-category/atmega128-minimal-development-board/
+
+Looking at the board:
+https://www.openimpulse.com/blog/wp-content/uploads/2014/03/ATmega128-Minimal-Development-Board-5.jpg
+I could make a daughterboard that sits on top with the RAM
+and I/O devices, e.g. USB to UART device, time of day clock,
+SD card socket. Later, I could add a socket for the 6809 :-)
+
+Atmega simulator: https://github.com/buserror/simavr
+
+## Mon 21 Aug 2023 09:02:03 AEST
+
+I finally found the schematic and source code for the project with the Z80
+and the Atmega providing ROM and I/O. The Atmega halts the CPU while doing 
+its work, which means that ROM reads are slooow. I can't use this for RAM
+as every RAM access would be slow. So I think I'll stick with the idea of
+using the ATF1508 CPLD for the next project.
+
+I replaced the BSD `grep` with the Fuzix one. It works. Now I realised
+that the shall doesn't have any quotes, single or double :-) I'll need
+to add them to use '*' etc. Done. I've imported a few other simple commands
+from Minix 1.5, and wrote my own `mv`.
+
+## Mon 21 Aug 2023 10:58:54 AEST
+
+I got readline working in the shell, I had to add '\r' to the readline
+source code. No tab completion, though!
+
+But I have this bug:
+
+```
+$ echo roff*
+roff_manual 				# Expands properly
+$ echo roff* > fred			# Doesn't expand when doing redirection
+$ ls -l fred
+-rwxrwxrwx     1 root root      1 fred
+$ cat fred
+					# Just a single newline character
+$ od -b fred
+0000000 012
+```
+
+Ah, I see the problem. On a pattern I'm opening the dir only once,
+building a list of matches for all patterns, then appending them
+to the argv. So when I get to the redirect, I toss everything after
+the redirect on the line.
+
+E.g.
+
+```
+ls -l *.c > foo				# Becomes
+ls -l > foo a.c b.c fred.c
+```
+
+OK, I fixed this by opening the dir as many times as there are
+patterns on the command line. And it all works fine on the hardware too!!

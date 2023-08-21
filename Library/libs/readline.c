@@ -267,7 +267,7 @@ int rl_edit_timeout(int fd, int ofd, const char *prompt,
                 if (c >= 'A' && c <= 'N')
                     c = CTRL("PNFB   A     E"[c - 'A']);
             }
-            else if (c == '\n')
+            else if ((c == '\n') || (c == '\r'))
                 break;
         }
         switch(c) {
