@@ -11,7 +11,7 @@ On the hardware side, there is:
 On the software side:
  - the xv6 filesystem code resides in ROM,
  - the libc and include files come mostly from Fuzix,
- - the userland applications come mainly from xv6-freebsd.
+ - the userland applications come from Fuzix, Minix 1.5 and xv6.
 
 There is no MMU and no clock device, so there isn't any multitasking
 (i.e. no `fork()`, `exec()`, `time()`. Apart from that, what is able
@@ -20,16 +20,17 @@ to work is pretty impressive.
 ## Status -- mid-August 2023
 
 The hardware is rock solid. I've got the xv6 filesystem in ROM and working well.
-I've got some of the FUZIX libc running including the mem/string functions, the
+I've got some of the Fuzix libc running including the mem/string functions, the
 stdio functions, and malloc/brk/sbrk. The rest of the libc is untested.
 
-There are some basic programs taken from xv6, FUZIX and Minix 1.5. There is also
+There are some basic programs taken from xv6, Fuzix and Minix 1.5. There is also
 a simple vi-like editor, a simple less-like pager, and a document processor
 called `roff`. So, with the current system, you can edit documents, process them
 and see the output.
 
 There is a simple shell that knows about `*` and `?` expansion, file redirection
-such as `>`, `<`, `>>` and `2>`. It also has simple "readline" functionality.
+such as `>`, `<`, `|`, `>>` and `2>`. It also has simple "readline" functionality
+with "tab" filename completion.
 
 ## Quick Start
 
@@ -81,8 +82,3 @@ $ ls -l
  - Write stub functions that do nothing, or do
    very little, e.g. return a constant `time()`.
  - Bring in more programs.
- - Modify the shell to simulate pipelines by
-   saving the standard output of one program to a 
-   temporary file and, when it `exit()`s,
-   start the next program with the temporary
-   file as its standard input.
