@@ -13,22 +13,19 @@ static char *recurser(void);	/* Routine to go up tree */
 static char *path_buf;
 static int path_size;
 
-static uint root_dev;
 static uint root_ino;
 static struct stat st;
 
-static char *search_dir(uint this_dev, uint this_ino) 
+static char *search_dir(uint this_ino) 
 {
 	struct dirent *d;
 	char *ptr;
 	int slen;
 	DIR * dp;
-	unsigned char slow_search = 0;
+	unsigned char slow_search = 1;
 
 	if (stat(path_buf, &st) < 0)
 		return NULL;
-	if (this_dev != st.st_dev)
-		++slow_search;
 	slen = strlen(path_buf);
 	ptr = path_buf + slen - 1;
 	if (*ptr != '/') {
@@ -51,7 +48,7 @@ static char *search_dir(uint this_dev, uint this_ino)
 			strcpy(ptr + 1, d->d_name);
 			if (stat(path_buf, &st) < 0)
 				continue;
-			if (st.st_ino == this_ino && st.st_dev == this_dev) {
+			if (st.st_ino == this_ino) {
 				closedir(dp);
 				return path_buf;
 			}
@@ -65,14 +62,12 @@ static char *search_dir(uint this_dev, uint this_ino)
 
 static char *recurser(void) 
 {
-	uint this_dev;
 	uint this_ino;
 
 	if (stat(path_buf, &st) < 0)
 		return NULL;
-	this_dev = st.st_dev;
 	this_ino = st.st_ino;
-	if (this_dev == root_dev && this_ino == root_ino) {
+	if (this_ino == root_ino) {
 		strcpy(path_buf, "/");
 		return path_buf;
 	}
@@ -81,7 +76,7 @@ static char *recurser(void)
 		return NULL;
 	}
 	strcat(path_buf, "/..");
-	return recurser()? search_dir(this_dev, this_ino) : (char *)NULL;
+	return recurser()? search_dir(this_ino) : (char *)NULL;
 }
 
 char *getcwd(char *buf, int size) 
@@ -93,7 +88,6 @@ char *getcwd(char *buf, int size)
 	strcpy(path_buf = buf, ".");
 	if (stat("/", &st) < 0)
 		return NULL;	/* no root */
-	root_dev = st.st_dev;
 	root_ino = st.st_ino;
 	return recurser();
 }

@@ -13,6 +13,9 @@
 #include <termios.h>
 #include <unistd.h>
 #include <errno.h>
+#include <dirent.h>
+
+#include <romcalls.h>
 
 #include <readline/readline.h>
 
@@ -218,6 +221,53 @@ static void history(int8_t dir)
 }
 #endif
 
+// Attempt to complete a filename.
+// Only works for files in the current directory.
+void tab_complete(void) {
+  DIR *D;
+  struct dirent *dent;
+  int filelen;
+  char *filename, *matchname=NULL;
+
+  // Walk back to either the beginning of the line
+  // or the first space to find the partial filename
+  *rl_cursor= 0;
+  for (filename= rl_cursor; filename > rl_base; filename--) {
+    if (*filename == ' ') { filename++; break; }
+  }
+
+  // Get the partial filename's length
+  filelen= strlen(filename); if (filelen==0) return;
+
+  // Open the current directory
+  D= opendir("."); if (D==NULL) return;
+
+  // Process each entry
+  while ((dent=readdir(D))!=NULL) {
+
+    // Skip empty directory entries
+    if (dent->d_name[0]=='\0') continue;
+
+    // If this file's name matches what's on the readline
+    if (!strncmp(filename, dent->d_name, filelen)) {
+      // It's not a unique match, so stop now
+      if (matchname!=NULL) { free(matchname); matchname=NULL; break; }
+
+      // So far it's unique, so copy the rest of the full name
+      matchname= strdup( &(dent->d_name[filelen]) );
+    }
+  }
+
+  // If we got here with a unique match, append the characters to the readline.
+  if (matchname != NULL) {
+    // cprintf("\nmatch >%s<\n", matchname);
+    for (char *cptr= matchname; *cptr !=0; cptr++) insert(*cptr);
+    insert(' ');
+    free(matchname);
+  }
+  closedir(D); free(D);
+}
+
 int rl_edit_timeout(int fd, int ofd, const char *prompt,
                 char *input, size_t len, uint8_t timeout, int (*timeout_fn)(void))
 {
@@ -275,6 +325,9 @@ int rl_edit_timeout(int fd, int ofd, const char *prompt,
                 esc = 1;
                 break;
             case '\r':
+                break;
+            case CTRL('I'):
+		tab_complete();
                 break;
             case CTRL('C'):
                 write(2, "^C\n", 3);

@@ -4058,3 +4058,67 @@ ls -l > foo a.c b.c fred.c
 
 OK, I fixed this by opening the dir as many times as there are
 patterns on the command line. And it all works fine on the hardware too!!
+
+## Mon 21 Aug 2023 14:43:55 AEST
+
+We have reached a plateau of development. The kernel is solid. I've got a fair
+bit of the libc working fine. I could simply bring over a bunch of userland
+programs, get them to compile and work etc. I could also add the shell kludge
+to simulate pipe lines. I could also modify Salmi to be a more symbolic
+debugging environment.
+
+One thing I haven't tested yet is my MMU hypothesis that the 6809's
+`BS` line goes high when we do an SWI instruction (ditto for any interrupt)
+and we can use that to put the hardware into "kernel" mode.
+
+The current kernel has 0x1234 as the vector for SWI :-) I just wrote some
+assembly code to send an SWI, catch it and print out a character, then RTI/RTS.
+I wrote C code in `try.c` to poke the binary into locationx 0x1234 onwards and
+call the SWI caller. It works in Salmi. Now to try on real hardware. Yes it
+works there too.
+
+So, at some point, I can drag out my logic analyser and confirm if the `BS`
+line does actually go high. I guess I can monitor the low 4 address lines
+to see exactly what addresses are being accessed, as the `BS` line will go
+high when I press a key on the keyboard, or when the USB device is accessed.
+I know, I can loop calling the SWI handler, then have a delay loop :-)
+
+Ah. I just spotted this in the datasheet:
+
+> Interrupt Acknowledge is indicated during both cycles of a hardware vector fetch
+> (RESET, NMI, FIRQ, IRQ, SWI, SWI2, SWI3). This signal, plus decoding of the lower
+> four address lines, can provide the user with an indication of which interrupt level
+> is being serviced and allow vectoring by device. 
+
+So, yes, this makes me confident that I'll see `BS` go high when the CPU fetches the
+SWI vector :-)
+
+## Mon 21 Aug 2023 15:28:11 AEST
+
+I just searched for "6809 single step hardware" and found an old 1980s article:
+https://deramp.com/swtpc.com/Homebrew_6809/Microcomputing_Nov_1980.pdf
+which has a circuit to drive the HALT line to do single stepping. It uses the
+E clock and some key debounce.
+
+I wonder if there's room left in the CPLD to do this? Even better would be
+some room left to drive four 7-seg displays. Maybe I could have some DIP
+switches, so I could choose what I'm monitoring: address, data, page table
+entries etc.?
+
+The hard bit is how to set up a breakpoint so I could actually single-step.
+This sounds like I'm over-complicating the design.
+
+## Wed 23 Aug 2023 10:50:41 AEST
+
+Back to the software. I just refactored the shell a bit and added pipelines.
+Yay. I had a bug because I wasn't NUL terminating the line of text that I
+was reading from the file that stored the remaining pipeline commands.
+
+Now it would be nice to add tab completion to readline! OK, I couldn't resist
+and I've done this but only for the current directory.
+
+I refactored `less.c` a bit but I didn't add reading from stdout because
+I'd have to rewrite it pretty much from scratch. Sigh.
+
+`pwd` isn't working, looks like `getcwd()` doesn't work. Fixed, I had to
+remove all the code related to device numbers.
