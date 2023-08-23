@@ -28,9 +28,9 @@ a simple vi-like editor, a simple less-like pager, and a document processor
 called `roff`. So, with the current system, you can edit documents, process them
 and see the output.
 
-There is a simple shell that knows about `*` and `?` expansion, file redirection
-such as `>`, `<`, `|`, `>>` and `2>`. It also has simple "readline" functionality
-with "tab" filename completion.
+There is a simple shell that knows about `*` and `?` expansion, pipelines, and
+file redirection such as `>`, `<`, `>>` and `2>`.
+It also has simple "readline" functionality with "tab" filename completion.
 
 ## Quick Start
 
@@ -46,6 +46,10 @@ $ ls -l
 -rwxrwxrwx     1 root root    129 README
 drwxrwxrwx     2 root root    464 bin
 -rwxrwxrwx     1 root root   6071 roff_manual
+
+$ head roff_manual | wc
+10 21 111
+
 $ cd bin
 $ ls -l
 -rwxrwxrwx     1 root root   3494 basename
@@ -59,7 +63,7 @@ $ ls -l
 -rwxrwxrwx     1 root root   1168 echo
 -rwxrwxrwx     1 root root   6341 expand
 -rwxrwxrwx     1 root root   8747 grep
--rwxrwxrwx     1 root root   7052 lesser
+-rwxrwxrwx     1 root root   7052 less
 -rwxrwxrwx     1 root root   1630 ln
 -rwxrwxrwx     1 root root   8165 ls
 -rwxrwxrwx     1 root root   1653 mkdir
