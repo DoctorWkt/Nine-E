@@ -1,16 +1,13 @@
 #include <sys/types.h>
 #include <stdio.h>
-
-#define SIZE 256
-
-char buf[SIZE];
+#include <string.h>
 
 int main(int argc, char *argv[]) {
-  char *ptr;
-
-                          printf("buf starts at 0x%x\n", buf);
-  ptr= buf + SIZE;        printf("ptr points at 0x%x\n", ptr);
-  ptr= buf + sizeof(buf); printf("ptr points at 0x%x\n", ptr);
-  ptr= &buf[SIZE];        printf("ptr points at 0x%x\n", ptr);
+  long x;
+  long y;
+  for (x= 0; x < 100; x= x + 10) {
+    y= x / 10;
+    printf("y is %ld\n", y);
+  }
   return(0);
 }
